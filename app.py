@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os,re,sys,time,random,requests
+import os, re, sys, time, random, requests
 try:
     from patchright.sync_api import sync_playwright
 except ImportError:
     from playwright.sync_api import sync_playwright
 
 # --- 环境变量 (可在Settings里设置secrets或者私库直接填写在双引号里)---
-COOKIE_VALUE = os.environ.get('COOKIE_VALUE') or ""    # remember_web cookie 值，必填
-EMAIL        = os.environ.get('EMAIL') or ""           # 登录邮箱,可选，作为备用, 建议填写
-PASSWORD     = os.environ.get('PASSWORD') or ""        # 登录密码,可选，作为备用, 建议填写
+EMAIL        = os.environ.get('EMAIL') or ""           # 登录邮箱, 必填
+PASSWORD     = os.environ.get('PASSWORD') or ""        # 登录密码, 必填
 TG_CHAT_ID   = os.environ.get('TG_CHAT_ID') or ""      # Telegram Chat ID,可选，通知
 TG_BOT_TOKEN = os.environ.get('TG_BOT_TOKEN') or ""    # Telegram Bot Token,可选
 
@@ -349,7 +348,7 @@ def solve_turnstile(page, timeout=120, success_check=None,
                     return True
             elif (not require_positive and success_check is None
                     and time.time() - start >= appear_grace):
-                log("ℹ️ 页面未出现 Turnstile，无需处理")
+                log("ℹ️️ 页面未出现 Turnstile，无需处理")
                 return True
             time.sleep(1)
             continue
@@ -408,32 +407,7 @@ def solve_turnstile(page, timeout=120, success_check=None,
     return False
 
 def login(page):
-    # 1. Cookie 登录尝试
-    if COOKIE_VALUE:
-        log("📇 尝试 Cookie 登录...")
-        try:
-            page.context.add_cookies([{
-                'name': 'remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d',
-                'value': COOKIE_VALUE,
-                'domain': 'dash.hidencloud.com',
-                'path': '/',
-                'expires': int(time.time()) + 3600 * 24 * 365,
-                'httpOnly': True,
-                'secure': True,
-                'sameSite': 'Lax'
-            }])
-            page.goto(f"{BASE_URL}/dashboard", wait_until="domcontentloaded", timeout=60000)
-            solve_turnstile(page, timeout=90, success_check=page_ready, reload_after=8)
-            page_title = page.title()
-            log(f"📝 当前Title: {page_title}")
-            if "auth/login" not in page.url:
-                log(f"✅ Cookie 登录成功！当前已到达dashboard页面")
-                return True
-            log("⚠️ Cookie 失效，切换到账号密码登录...")
-        except Exception as e:
-            log(f"⚠️ Cookie 登录出现异常: 账号密码登录...")
-
-    # 2. 账号密码登录
+    # 账号密码登录
     if not EMAIL or not PASSWORD:
         log("❌ 未配置 EMAIL/PASSWORD，无法进行账号密码登录")
         return False
@@ -465,7 +439,7 @@ def login(page):
         email_input = page.locator(email_sel).first
         pwd_input = page.locator(pwd_sel).first
         email_input.wait_for(state="visible", timeout=60000)
-        log("⌨️ 输入账号...")
+        log("⌨️️ 输入账号...")
         email_input.click()
         email_input.fill(EMAIL)
         time.sleep(random.uniform(0.8, 1.5))
@@ -685,10 +659,9 @@ def renew_service(page):
 
 def main():
     # 检查必要环境变量
-    log(f"🔍 凭证检测: COOKIE_VALUE={'已配置' if COOKIE_VALUE else '未配置'}, "
-        f"EMAIL={'已配置' if EMAIL else '未配置'}, PASSWORD={'已配置' if PASSWORD else '未配置'}")
-    if not COOKIE_VALUE and not (EMAIL and PASSWORD):
-        log("❌ 缺少登录凭证")
+    log(f"🔍 凭证检测: EMAIL={'已配置' if EMAIL else '未配置'}, PASSWORD={'已配置' if PASSWORD else '未配置'}")
+    if not (EMAIL and PASSWORD):
+        log("❌ 缺少登录凭证 (EMAIL/PASSWORD)")
         sys.exit(1)
 
     global SERVICE_URL
